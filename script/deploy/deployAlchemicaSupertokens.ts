@@ -33,30 +33,33 @@ async function deployAlchemicaSuperTokens() {
 
     console.log(`${name} SuperToken deployed at:`, superToken.address);
 
-    const token = (await ethers.getContractAt(
-      "SuperToken",
-      superToken.address
-    )) as SuperToken;
+    // const token = (await ethers.getContractAt(
+    //   "SuperToken",
+    //   superToken.address
+    // )) as SuperToken;
 
-    const mintRole =
-      "0x7b765e0e932d348852a6f810bfa1ab891e259123f02db8cdcde614c570223357";
+    // const mintRole =
+    //   "0x7b765e0e932d348852a6f810bfa1ab891e259123f02db8cdcde614c570223357";
 
-    await token.grantRole(mintRole, signer.address);
+    //  const tx = await token.grantRole(mintRole, signer.address);
+    //  await tx.wait()
 
-    await token.mint(signer.address, ethers.utils.parseEther("1000000"));
+    //  console
 
-    await token.revokeRole(mintRole, signer.address);
+    // await token.mint(signer.address, ethers.utils.parseEther("1000000"));
 
-    const bal = await token.balanceOf(signer.address);
+    // await token.revokeRole(mintRole, signer.address);
 
-    const totalSupply = await token.totalSupply();
+    // const bal = await token.balanceOf(signer.address);
 
-    const owner = await token.owner();
-    console.log("owner:", owner);
+    // const totalSupply = await token.totalSupply();
 
-    console.log("ts:", totalSupply.toString());
+    // const owner = await token.owner();
+    // console.log("owner:", owner);
 
-    console.log("minted!", bal.toString());
+    // console.log("ts:", totalSupply.toString());
+
+    // console.log("minted!", bal.toString());
   }
 }
 
