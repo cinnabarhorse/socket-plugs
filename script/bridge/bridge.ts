@@ -14,8 +14,8 @@ import { getTokens, isSuperBridge, isSuperToken } from "../constants/config";
 import { checkSendingLimit } from "./utils";
 import { getBridgeContract, getTokenContract } from "../helpers/common";
 
-const srcChain = ChainSlug.OPTIMISM_SEPOLIA;
-const dstChain = ChainSlug.ARBITRUM_SEPOLIA;
+const srcChain = ChainSlug.POLYGON_MAINNET;
+const dstChain = ChainSlug.BASE;
 const amount = "0";
 // const amount = "1";
 

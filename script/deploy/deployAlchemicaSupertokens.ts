@@ -2,17 +2,21 @@ import { ethers } from "hardhat";
 
 async function deployAlchemicaSuperTokens() {
   const names = [
-    "Test Supertoken",
-    // "Aavegotchi FUD Token",
-    // "Aavegotchi FOMO Token",
-    // "Aavegotchi ALPHA Token",
-    // "Aavegotchi KEK Token",
-    // "GAX Liquidity Reward Token",
+    // "Test Supertoken",
+    "Aavegotchi FUD Token",
+    "Aavegotchi FOMO Token",
+    "Aavegotchi ALPHA Token",
+    "Aavegotchi KEK Token",
+    "GAX Liquidity Reward Token",
   ];
 
   const symbols = [
-    "TEST",
-    // "FUD", "FOMO", "ALPHA", "KEK", "GLTR"
+    // "TEST",
+    "FUD",
+    "FOMO",
+    "ALPHA",
+    "KEK",
+    "GLTR",
   ];
 
   const signer = (await ethers.getSigners())[0];
