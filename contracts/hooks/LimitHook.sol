@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
 import "./plugins/LimitPlugin.sol";
@@ -26,13 +27,14 @@ contract LimitHook is LimitPlugin, ConnectorPoolPlugin {
     )
         external
         isVaultOrController
-        returns (TransferInfo memory transferInfo, bytes memory)
+        returns (TransferInfo memory transferInfo, bytes memory postHookData)
     {
         if (useControllerPools)
             _poolSrcHook(params_.connector, params_.transferInfo.amount);
 
         _limitSrcHook(params_.connector, params_.transferInfo.amount);
         transferInfo = params_.transferInfo;
+        postHookData = hex"";
     }
 
     function srcPostHookCall(
@@ -101,16 +103,12 @@ contract LimitHook is LimitPlugin, ConnectorPoolPlugin {
         external
         nonReentrant
         isVaultOrController
-        returns (
-            bytes memory postRetryHookData,
-            TransferInfo memory transferInfo
-        )
+        returns (bytes memory postHookData, TransferInfo memory transferInfo)
     {
-        (address updatedReceiver, uint256 pendingMint, address connector) = abi
-            .decode(
-                params_.cacheData.identifierCache,
-                (address, uint256, address)
-            );
+        (address receiver, uint256 pendingMint, address connector) = abi.decode(
+            params_.cacheData.identifierCache,
+            (address, uint256, address)
+        );
 
         if (connector != params_.connector) revert InvalidConnector();
 
@@ -119,12 +117,8 @@ contract LimitHook is LimitPlugin, ConnectorPoolPlugin {
             pendingMint
         );
 
-        postRetryHookData = abi.encode(
-            updatedReceiver,
-            consumedAmount,
-            pendingAmount
-        );
-        transferInfo = TransferInfo(updatedReceiver, consumedAmount, bytes(""));
+        postHookData = abi.encode(receiver, consumedAmount, pendingAmount);
+        transferInfo = TransferInfo(receiver, consumedAmount, bytes(""));
     }
 
     function postRetryHook(
@@ -135,16 +129,13 @@ contract LimitHook is LimitPlugin, ConnectorPoolPlugin {
         nonReentrant
         returns (CacheData memory cacheData)
     {
-        (
-            address updatedReceiver,
-            uint256 consumedAmount,
-            uint256 pendingAmount
-        ) = abi.decode(params_.postRetryHookData, (address, uint256, uint256));
+        (address receiver, uint256 consumedAmount, uint256 pendingAmount) = abi
+            .decode(params_.postHookData, (address, uint256, uint256));
 
         // code reaches here after minting/unlocking the pending amount
         emit PendingTokensBridged(
             params_.connector,
-            updatedReceiver,
+            receiver,
             consumedAmount,
             pendingAmount,
             params_.messageId
@@ -157,7 +148,7 @@ contract LimitHook is LimitPlugin, ConnectorPoolPlugin {
             connectorPendingAmount - consumedAmount
         );
         cacheData.identifierCache = abi.encode(
-            updatedReceiver,
+            receiver,
             pendingAmount,
             params_.connector
         );
@@ -178,7 +169,7 @@ contract LimitHook is LimitPlugin, ConnectorPoolPlugin {
 
     function _getIdentifierPendingAmount(
         bytes memory identifierCache_
-    ) internal view returns (uint256) {
+    ) internal pure returns (uint256) {
         if (identifierCache_.length > 0) {
             (, uint256 pendingAmount, ) = abi.decode(
                 identifierCache_,

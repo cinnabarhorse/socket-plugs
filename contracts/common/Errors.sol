@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
 error SiblingNotSupported();
@@ -25,3 +26,4 @@ error InsufficientFunds();
 error PermitDeadlineExpired();
 error InvalidSigner();
 error InsufficientMsgValue();
+error InvalidOptionsLength();

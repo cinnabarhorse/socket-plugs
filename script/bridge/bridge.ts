@@ -4,7 +4,6 @@ import { getSignerFromChainSlug, overrides } from "../helpers/networks";
 import { getSuperBridgeAddresses, getSuperTokenAddresses } from "../helpers";
 import { ChainSlug } from "@socket.tech/dl-core";
 import {
-  tokenDecimals,
   SBAddresses,
   STAddresses,
   STTokenAddresses,
@@ -13,13 +12,13 @@ import {
 import { getTokens, isSuperBridge, isSuperToken } from "../constants/config";
 import { checkSendingLimit } from "./utils";
 import { getBridgeContract, getTokenContract } from "../helpers/common";
+import { tokenDecimals } from "../../src/enums";
 
-const srcChain = ChainSlug.POLYGON_MAINNET;
-const dstChain = ChainSlug.BASE;
-const amount = "0";
-// const amount = "1";
-
+const srcChain = ChainSlug.ARBITRUM;
+const dstChain = ChainSlug.OPTIMISM;
 const gasLimit = 500_000;
+// without decimals
+const amount = 1;
 
 export const main = async () => {
   try {
@@ -27,7 +26,7 @@ export const main = async () => {
     if (tokens.length > 1) throw Error("single token bridge allowed");
     const token = tokens[0];
 
-    const amountBN = utils.parseUnits(amount, tokenDecimals[token]);
+    const amountBN = utils.parseUnits(amount.toString(), tokenDecimals[token]);
 
     let addresses: SBAddresses | STAddresses | undefined = {};
     if (isSuperBridge()) {
@@ -89,7 +88,6 @@ export const main = async () => {
 
     // deposit
     console.log(`depositing ${amountBN} to ${dstChain} from ${srcChain}`);
-
     const fees = await bridgeContract.getMinFees(connectorAddr, gasLimit, 0);
 
     const depositTx = await bridgeContract.bridge(

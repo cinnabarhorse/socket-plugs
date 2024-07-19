@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
 import "./plugins/LimitPlugin.sol";
@@ -78,7 +79,7 @@ contract LimitExecutionHook is LimitPlugin, ConnectorPoolPlugin {
     function dstPostHookCall(
         DstPostHookCallParams calldata params_
     ) public virtual isVaultOrController returns (CacheData memory cacheData) {
-        bytes memory execPayload = params_.transferInfo.data;
+        bytes memory execPayload = params_.transferInfo.extraData;
 
         (
             uint256 consumedAmount,
@@ -135,18 +136,10 @@ contract LimitExecutionHook is LimitPlugin, ConnectorPoolPlugin {
         public
         virtual
         isVaultOrController
-        returns (
-            bytes memory postRetryHookData,
-            TransferInfo memory transferInfo
-        )
+        returns (bytes memory postHookData, TransferInfo memory transferInfo)
     {
-        (
-            address receiver,
-            uint256 pendingMint,
-            ,
-            address connector,
-            bytes memory execPayload
-        ) = abi.decode(
+        (address receiver, uint256 pendingMint, , address connector, ) = abi
+            .decode(
                 params_.cacheData.identifierCache,
                 (address, uint256, uint256, address, bytes)
             );
@@ -158,7 +151,7 @@ contract LimitExecutionHook is LimitPlugin, ConnectorPoolPlugin {
             pendingMint
         );
 
-        postRetryHookData = abi.encode(receiver, consumedAmount, pendingAmount);
+        postHookData = abi.encode(receiver, consumedAmount, pendingAmount);
         transferInfo = TransferInfo(receiver, consumedAmount, bytes(""));
     }
 
@@ -167,7 +160,7 @@ contract LimitExecutionHook is LimitPlugin, ConnectorPoolPlugin {
     ) public virtual isVaultOrController returns (CacheData memory cacheData) {
         (
             ,
-            uint256 pendingMint,
+            ,
             uint256 bridgeAmount,
             address connector,
             bytes memory execPayload
@@ -177,7 +170,7 @@ contract LimitExecutionHook is LimitPlugin, ConnectorPoolPlugin {
             );
 
         (address receiver, uint256 consumedAmount, uint256 pendingAmount) = abi
-            .decode(params_.postRetryHookData, (address, uint256, uint256));
+            .decode(params_.postHookData, (address, uint256, uint256));
 
         uint256 connectorPendingAmount = _getConnectorPendingAmount(
             params_.cacheData.connectorCache
@@ -231,7 +224,7 @@ contract LimitExecutionHook is LimitPlugin, ConnectorPoolPlugin {
 
     function _getIdentifierPendingAmount(
         bytes memory identifierCache_
-    ) internal view returns (uint256) {
+    ) internal pure returns (uint256) {
         if (identifierCache_.length > 0) {
             (, uint256 pendingAmount, , , ) = abi.decode(
                 identifierCache_,

@@ -1,11 +1,7 @@
 import { BigNumber } from "ethers";
-import {
-  ChainSlug,
-  SBTokenAddresses,
-  STTokenAddresses,
-  Tokens,
-} from "../../src";
+import { ChainSlug, SBTokenAddresses, STTokenAddresses } from "../../src";
 import { getHookContract } from "../helpers/common";
+import { Tokens } from "../../src/enums";
 
 export const checkSendingLimit = async (
   chain: ChainSlug,
@@ -15,6 +11,10 @@ export const checkSendingLimit = async (
   amountBN: BigNumber
 ) => {
   let { hookContract } = await getHookContract(chain, token, addr);
+  if (!hookContract) {
+    console.log("No hook contract found, skipping limit check");
+    return;
+  }
   const limit: BigNumber = await hookContract.getCurrentSendingLimit(
     connectorAddr
   );

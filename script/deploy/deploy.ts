@@ -1,6 +1,9 @@
 import { config as dotenvConfig } from "dotenv";
 dotenvConfig();
 
+import { EventEmitter } from "events";
+EventEmitter.defaultMaxListeners = 20;
+
 import { Contract, Wallet } from "ethers";
 import { getSignerFromChainSlug } from "../helpers/networks";
 import {
@@ -14,12 +17,14 @@ import {
   isSuperToken,
   getConfigs,
   printConfigs,
+  getDryRun,
 } from "../constants/config";
 import {
   createObj,
   getOrDeploy,
   getOrDeployConnector,
-  getAllAddresses,
+  getProjectAddresses,
+  storeAllAddresses,
   storeTokenAddresses,
 } from "../helpers";
 import {
@@ -29,7 +34,6 @@ import {
   TokenContracts,
   CommonContracts,
   SuperTokenContracts,
-  Tokens,
   TokenConstants,
   STTokenAddresses,
   SBTokenAddresses,
@@ -39,10 +43,15 @@ import {
   ReturnObj,
 } from "../../src";
 import { isSBAppChain, getTokenConstants } from "../helpers/projectConstants";
-import { ExistingTokenAddresses } from "../constants/existing-token-addresses";
+import { ExistingTokenAddresses } from "../../src/enums/existing-token-addresses";
 import { deployHookContracts } from "./deployHook";
 import { verifyConstants } from "../helpers/verifyConstants";
 import { getBridgeContract } from "../helpers/common";
+import { Project, Tokens } from "../../src/enums";
+import { parseUnits } from "ethers/lib/utils";
+
+import { constants } from "ethers";
+const { AddressZero } = constants;
 
 let projectType: ProjectType;
 let pc: { [token: string]: TokenConstants } = {};
@@ -60,10 +69,11 @@ export const deploy = async () => {
 
   for (let token of tokens) {
     console.log(`Deploying contracts for ${token}...`);
+
     pc[token] = getTokenConstants(token);
     let addresses: SBAddresses | STAddresses;
     try {
-      addresses = getAllAddresses();
+      addresses = getProjectAddresses();
     } catch (error) {
       addresses = {} as SBAddresses | STAddresses;
     }
@@ -72,47 +82,49 @@ export const deploy = async () => {
       ...pc[token].vaultChains,
     ];
     const hookType = pc[token].hook.hookType;
-    await Promise.all(
-      allChains.map(async (chain: ChainSlug) => {
-        let allDeployed = false;
-        const signer = getSignerFromChainSlug(chain);
 
-        let chainAddresses: SBTokenAddresses | STTokenAddresses = (addresses[
-          chain
-        ]?.[token] ?? {}) as SBTokenAddresses | STTokenAddresses;
+    console.log(`Touching the following chains: ${allChains}`);
 
-        let siblings: ChainSlug[] = [],
-          isAppchain: boolean = false;
-        if (projectType == ProjectType.SUPERBRIDGE) {
-          isAppchain = isSBAppChain(chain, token);
-          siblings = isAppchain
-            ? pc[token].vaultChains
-            : [pc[token].controllerChains[0]];
-        } else if (projectType == ProjectType.SUPERTOKEN)
-          siblings = allChains.filter((c) => c !== chain);
+    for (let chain of allChains) {
+      console.log(`\nDeploying contracts for ${chain}...`);
+      let allDeployed = false;
+      const signer = getSignerFromChainSlug(chain);
 
-        // console.log({ siblings, hook });
-        while (!allDeployed) {
-          const results: ReturnObj = await deployChainContracts(
-            isAppchain,
-            pc[token].vaultChains.includes(chain),
-            signer,
-            chain,
-            token,
-            siblings,
-            hookType,
-            chainAddresses
-          );
+      let chainAddresses: SBTokenAddresses | STTokenAddresses = (addresses[
+        chain
+      ]?.[token] ?? {}) as SBTokenAddresses | STTokenAddresses;
 
-          allDeployed = results.allDeployed;
-          chainAddresses = results.deployedAddresses;
-          if (!allAddresses[chain]) allAddresses[chain] = {};
-          allAddresses[chain]![token] = chainAddresses;
-        }
-      })
-    );
+      let siblings: ChainSlug[] = [],
+        isAppchain: boolean = false;
+      if (projectType == ProjectType.SUPERBRIDGE) {
+        isAppchain = isSBAppChain(chain, token);
+        siblings = isAppchain
+          ? pc[token].vaultChains
+          : [pc[token].controllerChains[0]];
+      } else if (projectType == ProjectType.SUPERTOKEN)
+        siblings = allChains.filter((c) => c !== chain);
+
+      // console.log({ siblings, hook });
+      while (!allDeployed) {
+        const results: ReturnObj = await deployChainContracts(
+          isAppchain,
+          pc[token].vaultChains.includes(chain),
+          signer,
+          chain,
+          token,
+          siblings,
+          hookType,
+          chainAddresses
+        );
+
+        allDeployed = results.allDeployed;
+        chainAddresses = results.deployedAddresses;
+        if (!allAddresses[chain]) allAddresses[chain] = {};
+        allAddresses[chain]![token] = chainAddresses;
+      }
+    }
   }
-
+  await storeAllAddresses(projectName as Project, allAddresses);
   return allAddresses;
 };
 /**
@@ -145,32 +157,19 @@ const deployChainContracts = async (
       deployUtils.addresses = addr;
 
       if (isAppChain) {
-        deployUtils = await deployControllerChainContracts(
-          isVaultChain,
-          deployUtils
-        );
+        deployUtils = await deployControllerChainContracts(deployUtils);
       } else {
-        deployUtils = await deployVaultChainContracts(
-          isVaultChain,
-          deployUtils
-        );
+        deployUtils = await deployVaultChainContracts(deployUtils);
       }
     }
     if (isSuperToken()) {
       if (isVaultChain)
-        deployUtils = await deployVaultChainContracts(
-          isVaultChain,
-          deployUtils
-        );
-      else
-        deployUtils = await deployControllerChainContracts(
-          isVaultChain,
-          deployUtils
-        );
+        deployUtils = await deployVaultChainContracts(deployUtils);
+      else deployUtils = await deployControllerChainContracts(deployUtils);
     }
 
     for (let sibling of siblings) {
-      deployUtils = await deployConnectors(isVaultChain, sibling, deployUtils);
+      deployUtils = await deployConnectors(sibling, deployUtils);
     }
     allDeployed = true;
     console.log(chainSlug, " Contracts deployed! ✔");
@@ -194,7 +193,6 @@ const deployChainContracts = async (
 };
 
 const deployConnectors = async (
-  isVaultChain: boolean,
   sibling: ChainSlug,
   deployParams: DeployParams
 ): Promise<DeployParams> => {
@@ -214,13 +212,18 @@ const deployConnectors = async (
       deployParams.addresses
     );
     bridgeAddress = bridgeContract.address;
-    if (!bridgeAddress) throw new Error("Hub not found!");
+    if (!bridgeAddress) throw new Error("Bridge not found!");
 
-    integrationTypes = Object.keys(
-      pc[deployParams.currentToken].hook.limitsAndPoolId?.[
-        deployParams.currentChainSlug
-      ]
-    ) as IntegrationTypes[];
+    // Currently we only support fast integration type via setup script. For other types, can edit the project constants file.
+    // Will need to add here if we want to support other types in the future for No Hook case.
+    integrationTypes =
+      deployParams.hookType == Hooks.NO_HOOK
+        ? [IntegrationTypes.fast]
+        : (Object.keys(
+            pc[deployParams.currentToken].hook.limitsAndPoolId?.[
+              deployParams.currentChainSlug
+            ]
+          ) as IntegrationTypes[]);
 
     for (let intType of integrationTypes) {
       const connector: Contract = await getOrDeployConnector(
@@ -232,7 +235,7 @@ const deployConnectors = async (
       deployParams.addresses = createObj(
         deployParams.addresses,
         ["connectors", sibling.toString(), intType],
-        connector.address
+        getDryRun() ? AddressZero : connector.address
       );
     }
 
@@ -249,7 +252,6 @@ const deployConnectors = async (
 };
 
 const deployControllerChainContracts = async (
-  isVaultChain: boolean,
   deployParams: DeployParams
 ): Promise<DeployParams> => {
   try {
@@ -260,6 +262,7 @@ const deployControllerChainContracts = async (
 
     if (isSuperToken()) {
       deployParams = await deploySuperToken(deployParams);
+
       let token = deployParams.addresses[TokenContracts.SuperToken];
       if (token) mintableToken = token;
       else throw new Error("SuperToken not found on chain");
@@ -297,10 +300,11 @@ const deployControllerChainContracts = async (
       deployParams
     );
 
-    deployParams.addresses[SuperBridgeContracts.Controller] =
-      controller.address;
+    deployParams.addresses[SuperBridgeContracts.Controller] = getDryRun()
+      ? AddressZero
+      : controller.address;
 
-    deployParams = await deployHookContracts(isVaultChain, true, deployParams);
+    deployParams = await deployHookContracts(true, deployParams);
     console.log(
       deployParams.currentChainSlug,
       " Controller Chain Contracts deployed! ✔"
@@ -317,7 +321,6 @@ const deployControllerChainContracts = async (
 };
 
 const deployVaultChainContracts = async (
-  isVaultChain: boolean,
   deployParams: DeployParams
 ): Promise<DeployParams> => {
   console.log(
@@ -329,7 +332,7 @@ const deployVaultChainContracts = async (
       ExistingTokenAddresses[deployParams.currentChainSlug]?.[
         deployParams.currentToken
       ];
-    if (!nonMintableToken) throw new Error("Token not found on app chain");
+    if (!nonMintableToken) throw new Error("Token not found on vault chain");
 
     if (!deployParams.addresses[SuperBridgeContracts.NonMintableToken])
       deployParams.addresses[SuperBridgeContracts.NonMintableToken] =
@@ -341,9 +344,12 @@ const deployVaultChainContracts = async (
       [nonMintableToken],
       deployParams
     );
-    deployParams.addresses[SuperBridgeContracts.Vault] = vault.address;
 
-    deployParams = await deployHookContracts(isVaultChain, false, deployParams);
+    deployParams.addresses[SuperBridgeContracts.Vault] = getDryRun()
+      ? AddressZero
+      : vault.address;
+
+    deployParams = await deployHookContracts(false, deployParams);
     console.log(
       deployParams.currentChainSlug,
       " Vault Chain Contracts deployed! ✔"
@@ -361,18 +367,45 @@ const deployVaultChainContracts = async (
 
 const deploySuperToken = async (deployParams: DeployParams) => {
   let contractName = SuperTokenContracts.SuperToken;
-  let path = `contracts/token/${contractName}.sol`;
-  let superTokenInfo = pc[deployParams.currentToken].superTokenInfo;
-  if (!superTokenInfo) throw new Error("SuperToken info not found!");
-  let { name, symbol, decimals, initialSupply, initialSupplyOwner, owner } =
-    superTokenInfo;
 
-  const superTokenContract: Contract = await getOrDeploy(
-    contractName,
-    path,
-    [name, symbol, decimals, initialSupplyOwner, owner, initialSupply],
-    deployParams
-  );
-  deployParams.addresses[contractName] = superTokenContract.address;
+  if (
+    ExistingTokenAddresses[deployParams.currentChainSlug]?.[
+      deployParams.currentToken
+    ]
+  ) {
+    deployParams.addresses[contractName] =
+      ExistingTokenAddresses[deployParams.currentChainSlug]?.[
+        deployParams.currentToken
+      ];
+  } else {
+    let path = `contracts/token/${contractName}.sol`;
+    let superTokenInfo = pc[deployParams.currentToken].superTokenInfo;
+    if (!superTokenInfo) throw new Error("SuperToken info not found!");
+    let {
+      name,
+      symbol,
+      decimals,
+      initialSupply,
+      initialSupplyOwner,
+      owner,
+      initialChain,
+    } = superTokenInfo;
+    const supply =
+      initialChain === deployParams.currentChainSlug ? initialSupply : "0";
+    const superTokenContract: Contract = await getOrDeploy(
+      contractName,
+      path,
+      [
+        name,
+        symbol,
+        decimals,
+        initialSupplyOwner,
+        owner,
+        parseUnits(supply, decimals),
+      ],
+      deployParams
+    );
+    deployParams.addresses[contractName] = superTokenContract.address;
+  }
   return deployParams;
 };
