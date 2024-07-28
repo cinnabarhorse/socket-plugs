@@ -17,4 +17,5 @@ export enum Tokens {
   KEK = "KEK",
   GLTR = "GLTR",
   STIME = "STIME",
+  GHST = "GHST",
 }
