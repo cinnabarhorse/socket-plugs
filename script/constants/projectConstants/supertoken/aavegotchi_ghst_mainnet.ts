@@ -17,7 +17,7 @@ export const pc: ProjectConstants = {
           [ChainSlug.MAINNET]: {
             [IntegrationTypes.fast]: {
               sendingLimit: "1000000.0",
-              receivingLimit: "100000",
+              receivingLimit: "1000000",
             },
           },
           [ChainSlug.POLYGON_MAINNET]: {
