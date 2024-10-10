@@ -14,6 +14,8 @@ export const ExistingTokenAddresses: {
     [Tokens.DAI]: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
     [Tokens.ETH]: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
     [Tokens.GHST]: "0x3f382dbd960e3a9bbceae22651e88158d2791550",
+    [Tokens.USDE]: "0x4c9EDD5852cd905f086C759E8383e09bff1E68B3",
+    [Tokens.SUSDE]: "0x9D39A5DE30e57443BfF2A8307A4256c8797A3497",
   },
   [ChainSlug.OPTIMISM]: {
     [Tokens.USDC]: "0x0b2c639c533813f4aa9d7837caf62653d097ff85",
@@ -25,6 +27,7 @@ export const ExistingTokenAddresses: {
     [Tokens.WSTETH]: "0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb",
     [Tokens.DAI]: "0xda10009cbd5d07dd0cecc66161fc93d7c9000da1",
     [Tokens.ETH]: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+    [Tokens.SUSDE]: "0x211Cc4DD073734dA055fbF44a2b4667d5E5fE5d2",
   },
   [ChainSlug.POLYGON_MAINNET]: {
     [Tokens.USDC]: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
@@ -45,6 +48,7 @@ export const ExistingTokenAddresses: {
     [Tokens.WSTETH]: "0xc1cba3fcea344f92d9239c08c0568f6f2f0ee452",
     [Tokens.DAI]: "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb",
     [Tokens.ETH]: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+    [Tokens.SUSDE]: "0x211Cc4DD073734dA055fbF44a2b4667d5E5fE5d2",
   },
   [ChainSlug.ARBITRUM]: {
     [Tokens.USDC]: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
@@ -57,6 +61,8 @@ export const ExistingTokenAddresses: {
     [Tokens.ETH]: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
     [Tokens.MTK]: "0x094553F42B44Ea1492b0dcA5f4134F23f45db742",
     [Tokens.STIME]: "0x17AfF554423D2C40A1BBF51b443E9d43dd8AE1eb",
+    [Tokens.MAGIC]: "0x539bde0d7dbd336b79148aa742883198bbf60342",
+    [Tokens.SUSDE]: "0x211Cc4DD073734dA055fbF44a2b4667d5E5fE5d2",
   },
   [ChainSlug.ARBITRUM_SEPOLIA]: {
     [Tokens.USDC]: "0x8537307810fC40F4073A12a38554D4Ff78EfFf41",
@@ -71,8 +77,7 @@ export const ExistingTokenAddresses: {
     [Tokens.USDC]: "0x565810cbfa3Cf1390963E5aFa2fB953795686339",
     [Tokens.USDT]: "0xB4130e87A180b9448286B291331aEe8A9C154A3A",
     [Tokens.DAI]: "0x255745E5C7Ae620b7f523F5E4A0Ead37660EC5d6",
-    // [Tokens.WETH]: "0xE67ABDA0D43f7AC8f37876bBF00D1DFadbB93aaa", // actual weth
-    [Tokens.WETH]: "0x771d1Ae208377453D478dF08BbC38034F72aC833", // dummy token
+    [Tokens.WETH]: "0x771d1Ae208377453D478dF08BbC38034F72aC833",
     [Tokens.WBTC]: "0x94BEff5da6201cB2C8F489196FD970B3DF5aA32A",
     [Tokens.ETH]: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
   },
@@ -86,5 +91,8 @@ export const ExistingTokenAddresses: {
     [Tokens.WETH]: "0x2b42AFFD4b7C14d9B7C2579229495c052672Ccd3",
     [Tokens.ETH]: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
     [Tokens.WBTC]: "0xfC5CC93d85861ac82d89fc2D3e56315540E9C8A7",
+  },
+  [ChainSlug.REYA]: {
+    [Tokens.SUSDE]: "0x2339D41f410EA761F346a14c184385d15f7266c4",
   },
 };

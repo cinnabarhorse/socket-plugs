@@ -1,9 +1,8 @@
 import { config as dotenvConfig } from "dotenv";
 import { getProjectAddresses } from "../helpers";
-import OwnableArtifact from "../../out/Ownable.sol/Ownable.json";
 import { Signer, Wallet, ethers } from "ethers";
-import { Ownable } from "../../typechain-types/contracts/utils/Ownable";
-import { getProviderFromChainSlug, overrides } from "../helpers/networks";
+import { Ownable, Ownable__factory } from "../../typechain-types";
+import { getProviderFromChainSlug, getOverrides } from "../helpers/networks";
 import {
   ChainSlug,
   SBAddresses,
@@ -54,8 +53,6 @@ const filteredChainSlugs = !filterChainsParam
   ? allChainSlugs
   : allChainSlugs.filter((c) => filterChainsParam.includes(c));
 
-const ownableABI = OwnableArtifact.abi;
-
 const wallet: Wallet = new ethers.Wallet(signerKey);
 const signerAddress = wallet.address.toLowerCase();
 
@@ -99,7 +96,7 @@ const checkAndNominate = async (
   label = label.padEnd(45);
   const contract = new ethers.Contract(
     contractAddress,
-    ownableABI,
+    Ownable__factory.abi,
     signer
   ) as Ownable;
 
@@ -127,7 +124,7 @@ const checkAndNominate = async (
     if (sendTx) {
       console.log(`✨ ${label}: Nominating`);
       const tx = await contract.nominateOwner(newOwner, {
-        ...overrides[parseInt(chainSlug)],
+        ...getOverrides(parseInt(chainSlug)),
       });
       const receipt = await tx.wait();
       console.log(`🚀 ${label}: Done: ${receipt.transactionHash}`);

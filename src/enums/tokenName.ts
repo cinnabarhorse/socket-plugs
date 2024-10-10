@@ -20,4 +20,7 @@ export const tokenName: { [key in Tokens]: string } = {
   [Tokens.GLTR]: "GAX Liquidity Token Reward",
   [Tokens.STIME]: "SuperTimeToken",
   [Tokens.GHST]: "Aavegotchi GHST Token",
+  [Tokens.USDE]: "USDe",
+  [Tokens.MAGIC]: "magic",
+  [Tokens.SUSDE]: "Staked USDe",
 };

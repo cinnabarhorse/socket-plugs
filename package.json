@@ -1,7 +1,7 @@
 {
   "name": "@socket.tech/socket-plugs",
   "license": "MIT",
-  "version": "1.0.28",
+  "version": "1.0.29",
   "description": "Plugs built using socket's data layer",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
@@ -46,14 +46,15 @@
     "abi": "hardhat export-abi",
     "compile": "forge build",
     "test": "forge test",
-    "setup:all": "forge install && yarn install && yarn setup:dependencies && yarn build && yarn setup:socket",
+    "setup:all": "forge install && yarn install && yarn setup:dependencies && yarn build",
     "setup:dependencies": "yarn && yarn add @socket.tech/dl-core",
     "script:setup": "yarn setup:dependencies && npx ts-node script/setup.ts",
     "script:deploy": "npx hardhat run script/deploy.ts",
     "script:verify": "npx hardhat run script/deploy/verifyContracts.ts",
-    "setup:socket": "ts-node setup.ts",
-    "add:project": "npx ts-node script/script.ts new",
-    "deploy:project": "yarn script:deploy",
+    "script:bridge": "npx ts-node script/bridge/bridge.ts",
+    "project:new": "npx ts-node script/script.ts new",
+    "project:edit": "npx ts-node script/script.ts edit",
+    "project:addToken": "npx ts-node script/script.ts add_token",
     "bridge": "npx hardhat run script/bridge/bridge.ts"
   },
   "pre-commit": [
@@ -63,7 +64,7 @@
   "dependencies": {
     "@arbitrum/sdk": "^3.7.0",
     "@eth-optimism/sdk": "^3.3.2",
-    "@socket.tech/dl-core": "^2.19.0",
+    "@socket.tech/dl-core": "^2.28.0",
     "lodash": "^4.17.21",
     "prompts": "^2.4.2"
   }

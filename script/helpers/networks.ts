@@ -1,9 +1,15 @@
 import { config as dotenvConfig } from "dotenv";
 import { BigNumberish, Wallet, ethers } from "ethers";
 import { resolve } from "path";
-import { ChainSlug, ChainSlugToKey } from "@socket.tech/dl-core";
-import { getOwnerSignerKey } from "../constants/config";
+import {
+  ChainSlug,
+  ChainSlugToKey,
+  DeploymentMode,
+} from "@socket.tech/dl-core";
+import { getMode, getOwnerSignerKey } from "../constants/config";
 import { chainSlugReverseMap } from "../setup/enumMaps";
+import { chains, getChainName } from "../constants";
+import { Overrides } from "../../src";
 
 const dotenvConfigPath: string = process.env.DOTENV_CONFIG_PATH || "./.env";
 dotenvConfig({ path: resolve(__dirname, dotenvConfigPath) });
@@ -15,11 +21,7 @@ export const gasPrice = undefined;
 export const type = 2;
 
 export const overrides: {
-  [chain in ChainSlug]?: {
-    type?: number | undefined;
-    gasLimit?: BigNumberish | undefined;
-    gasPrice?: BigNumberish | undefined;
-  };
+  [chain: number]: Overrides;
 } = {
   [ChainSlug.ARBITRUM_SEPOLIA]: {
     type,
@@ -88,8 +90,8 @@ export const overrides: {
   },
   [ChainSlug.BASE]: {
     // type: 1,
-    gasLimit,
-    gasPrice,
+    // gasLimit: 5_000_000,
+    // gasPrice,
   },
   [ChainSlug.REYA_CRONOS]: {
     type: 1,
@@ -108,9 +110,26 @@ export const overrides: {
   },
 };
 
+export const getOverrides = (chainSlug: ChainSlug): Overrides => {
+  // First check from the overrides object. Prod chains config should be here.
+  if (overrides[chainSlug]) return overrides[chainSlug];
+
+  // If not present, check from the chains object. Test chains config should be here
+  if (chains?.[chainSlug]?.overrides) {
+    return chains[chainSlug].overrides;
+  }
+
+  // return the default values defined above
+  return {
+    type,
+    gasLimit,
+    gasPrice,
+  };
+};
+
 export const rpcKeys = (chainSlug: ChainSlug) => {
-  const chainName = chainSlugReverseMap.get(String(chainSlug));
-  return chainName ? `${chainName.toUpperCase()}_RPC` : "";
+  const chainName = getChainName(chainSlug);
+  return chainName ? `${chainName}_RPC` : "";
 };
 
 export function getJsonRpcUrl(chain: ChainSlug): string {
